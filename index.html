@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tour by BIHAR</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: 'hsl(0 0% 0%)',
+              foreground: 'hsl(0 0% 100%)',
+              card: 'hsl(0 0% 5%)',
+              primary: 'hsl(0 0% 100%)',
+              'primary-foreground': 'hsl(0 0% 0%)',
+              muted: 'hsl(0 0% 12%)',
+              'muted-foreground': 'hsl(0 0% 60%)',
+              accent: 'hsl(0 0% 15%)',
+              border: 'hsl(0 0% 20%)',
+            },
+            fontFamily: {
+              body: ['Outfit', 'sans-serif'],
+              heading: ['Space Grotesk', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css" />
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body class="min-h-screen bg-background text-foreground font-body overflow-x-hidden">
+    
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-800">
+      <div class="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 relative flex items-center justify-center mb-4">
+        <svg id="splash-svg" viewBox="0 0 300 300" class="w-full h-full drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+          <path id="splash-path" fill="transparent" stroke="rgba(255, 255, 255, 0.6)" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"></path>
+        </svg>
+      </div>
+      <p style="opacity: 0; transform: translateY(10px);" id="splash-text" class="mt-4 text-sm tracking-[0.3em] uppercase text-muted-foreground transition-all duration-700">
+        Explore the beauty of Bihar
+      </p>
+      <div id="splash-line" class="mt-8 h-px bg-foreground transition-all duration-800" style="width: 0;"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="relative min-h-screen hidden opacity-0 transition-opacity duration-500">
+      
+      <!-- Typography -->
+      <div class="absolute top-10 w-full flex flex-col items-center z-10 pointer-events-none">
+        <h1 class="mb-2 text-center text-2xl font-heading font-semibold tracking-wider text-foreground text-glow md:text-3xl" style="animation: fadeIn 0.5s ease 0.2s both;">
+          Tour By BIHAR
+        </h1>
+        <p class="mb-4 text-center text-xs tracking-[0.2em] uppercase text-muted-foreground" style="animation: fadeIn 0.5s ease 0.4s both;">
+          38 Districts â€” Select a district to explore
+        </p>
+      </div>
+
+      <!-- Map Container -->
+      <div class="flex h-screen w-full items-center justify-center">
+        <div id="map-container" class="relative w-full max-w-2xl overflow-hidden px-4" style="touch-action: none;">
+          <svg id="bihar-map-svg" viewBox="0 0 600 720" class="w-full" style="max-height: 78vh;">
+            <g id="map-g" style="transform-origin: 0 0; will-change: transform;"></g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="pointer-events-none absolute bottom-4 right-6 z-10 flex flex-col items-end opacity-70 transition-opacity hover:opacity-100">
+        <p class="text-xs tracking-widest text-muted-foreground uppercase font-heading">
+          Created by <span class="text-primary/80 font-bold">Arpit Chourasia</span> &amp; <span class="text-primary/80 font-bold">Guguloth Akhil</span>
+        </p>
+        <p class="text-[10px] mt-1 tracking-wider text-muted-foreground/60 uppercase font-heading">
+          Applied for copyright in March 2026
+        </p>
+      </div>
+    </div>
+
+    <!-- District Panel -->
+    <div id="district-panel" class="fixed inset-y-0 right-0 z-40 w-full overflow-y-auto border-l border-border bg-background sm:w-96 md:w-[28rem] translate-x-full transition-transform duration-300 ease-in-out">
+      <div class="p-6">
+        <!-- Header -->
+        <div class="mb-4 flex items-start justify-between">
+          <div>
+            <h3 id="panel-district-name" class="font-heading text-xl font-semibold text-foreground text-glow"></h3>
+            <p class="text-xs text-muted-foreground">Bihar</p>
+          </div>
+          <button id="close-panel" class="rounded-md border border-border p-2 text-foreground transition-colors hover:bg-accent hover:scale-110 active:scale-90">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Distance Tracker -->
+        <div id="distance-container" class="mb-5 flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 opacity-0 -translate-y-2 transition-all duration-300">
+          <i data-lucide="navigation" class="w-3.5 h-3.5 text-foreground"></i>
+          <span class="text-xs text-muted-foreground">
+            Distance from Patna: <span id="distance-value" class="font-semibold text-foreground"></span>
+          </span>
+        </div>
+
+        <div id="panel-content" class="space-y-6">
+          <!-- Content populated via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Selected Place Centered Modal -->
+    <div id="place-popup" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300 p-4">
+      <div class="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl scale-95 transition-transform duration-300" id="place-popup-content">
+        <!-- Close button -->
+        <button id="close-popup" class="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-colors hover:bg-black/80 hover:scale-110 active:scale-90">
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+        
+        <!-- Image Header -->
+        <div class="h-56 w-full bg-muted relative overflow-hidden">
+          <img id="popup-image" src="" alt="Place Image" class="h-full w-full object-cover transition-opacity duration-500 opacity-0" />
+          <!-- Loader -->
+          <div id="popup-image-loader" class="absolute inset-0 flex items-center justify-center bg-accent">
+            <i data-lucide="loader-2" class="h-6 w-6 animate-spin text-muted-foreground"></i>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+          <h4 id="popup-title" class="absolute bottom-4 left-6 right-16 font-heading text-2xl font-bold text-white text-glow shadow-black"></h4>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+          <div class="mb-4 flex items-center gap-2">
+            <span class="text-primary"><i data-lucide="book-open" class="w-4 h-4"></i></span>
+            <h5 class="font-heading text-sm font-semibold uppercase tracking-wider text-foreground">History & Details</h5>
+          </div>
+          
+          <div class="max-h-48 overflow-y-auto custom-scrollbar pr-2 mb-6">
+            <p id="popup-desc" class="text-sm text-gray-300 leading-relaxed mb-4"></p>
+            <!-- Nearby Hotels Container -->
+            <div id="popup-hotels-container" class="space-y-3 border-t border-border pt-4 mt-2 hidden"></div>
+          </div>
+          
+          <div class="flex gap-3">
+            <button id="popup-add-to-plan" class="flex-1 flex items-center justify-center gap-2 rounded-lg bg-card border border-primary py-3 text-sm font-bold text-primary transition-all hover:bg-primary hover:text-primary-foreground hover:scale-[1.02] active:scale-[0.98]">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              Add to Plan
+            </button>
+            <a id="popup-directions" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98]">
+              <i data-lucide="navigation" class="w-4 h-4"></i>
+              Get Directions
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tour Plan FAB -->
+    <button id="tour-plan-fab" class="fixed bottom-6 left-6 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95 hidden">
+      <i data-lucide="map" class="h-5 w-5"></i>
+      <span class="font-heading font-bold text-sm">Tour Plan</span>
+      <span id="tour-plan-badge" class="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[10px] font-bold text-foreground">0</span>
+    </button>
+
+    <!-- Tour Plan Modal -->
+    <div id="tour-plan-modal" class="fixed inset-y-0 left-0 z-50 w-full overflow-y-auto border-r border-border bg-background sm:w-96 md:w-[28rem] -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl">
+      <div class="p-6 h-full flex flex-col">
+        <!-- Header -->
+        <div class="mb-6 flex items-start justify-between border-b border-border pb-4">
+          <div>
+            <h3 class="font-heading text-xl font-semibold text-foreground text-glow flex items-center gap-2">
+              <i data-lucide="map" class="h-5 w-5 text-primary"></i>
+              Your Tour Plan
+            </h3>
+            <p class="text-xs text-muted-foreground mt-1">Review and optimize your route</p>
+          </div>
+          <button id="close-tour-plan" class="rounded-md border border-border p-2 text-foreground transition-colors hover:bg-accent hover:scale-110 active:scale-90">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Selected Places List -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-6">
+          <div id="tour-plan-empty" class="flex h-full flex-col items-center justify-center text-center opacity-50">
+            <i data-lucide="map-pin" class="h-12 w-12 mb-2 text-muted-foreground"></i>
+            <p class="text-sm">No places added yet.</p>
+            <p class="text-xs text-muted-foreground">Select places to build your itinerary.</p>
+          </div>
+          <div id="tour-plan-list" class="space-y-4">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Generated Route Result -->
+        <div id="tour-route-result" class="mb-6 hidden border border-primary/30 bg-primary/5 rounded-lg p-4">
+          <h4 class="font-heading text-sm font-bold text-primary mb-3 flex items-center gap-2">
+            <i data-lucide="route" class="h-4 w-4"></i>
+            Optimal Route Generated
+          </h4>
+          <div id="tour-route-steps" class="space-y-3 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[2px] before:bg-border mb-4">
+            <!-- Populated via JS -->
+          </div>
+          <button id="download-map-btn" class="flex w-full items-center justify-center gap-2 rounded-lg bg-white text-black py-2 text-sm font-bold transition-all hover:bg-gray-200 active:scale-95">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Download Roadmap
+          </button>
+        </div>
+
+        <!-- Actions -->
+        <div class="pt-4 border-t border-border">
+          <button id="generate-route-btn" class="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+            <i data-lucide="route" class="w-4 h-4"></i>
+            Generate Optimal Route
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data and Scripts -->
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

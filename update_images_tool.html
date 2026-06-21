@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fetch Tour by Bihar Images</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; background: #121212; color: white; padding: 40px; text-align: center; }
+    button { background: #3b82f6; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    #status { margin-top: 20px; font-size: 16px; color: #94a3b8; }
+    .progress-bar { width: 100%; max-width: 600px; height: 10px; background: #333; border-radius: 5px; margin: 20px auto; overflow: hidden; }
+    .progress-fill { height: 100%; background: #3b82f6; width: 0%; transition: width 0.1s; }
+  </style>
+</head>
+<body>
+
+  <h1>🖼️ Tour by Bihar - Image Fetcher</h1>
+  <p>Click the button below to fetch Wikipedia images for all 1,060 places using your browser.</p>
+  <p style="color: #cbd5e1; font-size: 14px;">(This might take a minute or two. A new <b>new_data.js</b> file will automatically download when finished!)</p>
+  
+  <button id="start-btn">Start Fetching Images</button>
+
+  <div class="progress-bar">
+    <div id="progress-fill" class="progress-fill"></div>
+  </div>
+  <div id="status">Ready.</div>
+
+  <!-- Load current data -->
+  <script src="data.js"></script>
+
+  <script>
+    const startBtn = document.getElementById('start-btn');
+    const statusTxt = document.getElementById('status');
+    const progressFill = document.getElementById('progress-fill');
+
+    const FALLBACKS = {
+      "Religious": "https://images.unsplash.com/photo-1549487222-28df529cecf1?auto=format&fit=crop&q=80&w=800",
+      "Historical": "https://images.unsplash.com/photo-1555581977-1a0656fb33db?auto=format&fit=crop&q=80&w=800",
+      "Museum / Cultural": "https://images.unsplash.com/photo-1518998053401-b537c35251c6?auto=format&fit=crop&q=80&w=800",
+      "Parks / Gardens": "https://images.unsplash.com/photo-1588625699478-f71f65bb54eb?auto=format&fit=crop&q=80&w=800",
+      "Wildlife / Nature": "https://images.unsplash.com/photo-1574870111867-089730e5a72b?auto=format&fit=crop&q=80&w=800",
+      "Rivers / Lakes / Ghats": "https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&q=80&w=800",
+      "Hills / Caves": "https://images.unsplash.com/photo-1506540605923-277a87ea7416?auto=format&fit=crop&q=80&w=800"
+    };
+    const DEFAULT_FALLBACK = "https://images.unsplash.com/photo-1506461883276-594a12b11cb3?auto=format&fit=crop&q=80&w=800";
+
+    async function fetchImage(placeName, dist) {
+      try {
+        const query = encodeURIComponent(placeName + " " + dist + " Bihar");
+        const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${query}&gsrlimit=1&prop=pageimages&pithumbsize=800&format=json&origin=*`;
+        const res = await fetch(url);
+        if(!res.ok) return null;
+        const data = await res.json();
+        if(data.query && data.query.pages) {
+          const pageId = Object.keys(data.query.pages)[0];
+          const page = data.query.pages[pageId];
+          if(page.thumbnail && page.thumbnail.source) return page.thumbnail.source;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      return null;
+    }
+
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      startBtn.innerText = "Fetching...";
+      
+      // Calculate total places
+      let totalPlaces = 0;
+      let totalFetched = 0;
+      
+      for(const dist in biharTourismData) {
+        const cats = biharTourismData[dist].categorizedPlaces;
+        for(const cat in cats) {
+          totalPlaces += cats[cat].length;
+        }
+      }
+
+      // Collect all flat references
+      let allPlaces = [];
+      for(const dist in biharTourismData) {
+        const cats = biharTourismData[dist].categorizedPlaces;
+        for(const cat in cats) {
+          cats[cat].forEach(p => {
+            allPlaces.push({ place: p, district: dist, category: cat });
+          });
+        }
+      }
+
+      statusTxt.innerText = `Fetching 0 / ${totalPlaces}...`;
+
+      // Batch processing to save browser memory and respect rate limits
+      const CONCURRENCY = 10;
+      let currentIndex = 0;
+
+      async function worker() {
+        while(currentIndex < allPlaces.length) {
+          const idx = currentIndex++;
+          const item = allPlaces[idx];
+          
+          if(!item.place.image) {
+             const wikiImg = await fetchImage(item.place.name, item.district);
+             if(wikiImg) {
+               item.place.image = wikiImg;
+             } else {
+               item.place.image = FALLBACKS[item.category] || DEFAULT_FALLBACK;
+             }
+          }
+          
+          totalFetched++;
+          if (totalFetched % 5 === 0 || totalFetched === totalPlaces) {
+            statusTxt.innerText = `Fetched ${totalFetched} / ${totalPlaces} images...`;
+            progressFill.style.width = Math.round((totalFetched/totalPlaces)*100) + '%';
+          }
+        }
+      }
+
+      let workers = [];
+      for(let i=0; i<CONCURRENCY; i++) {
+        workers.push(worker());
+      }
+
+      await Promise.all(workers);
+
+      // Generating Download file
+      statusTxt.innerText = "Done! Generating new data.js file...";
+      
+      let finalString = "const PATNA_COORDS = { lat: 25.5941, lng: 85.1376 };\n\n";
+      finalString += "const biharDistrictCoordinates = " + JSON.stringify(biharDistrictCoordinates, null, 2) + ";\n\n";
+      finalString += "const biharTourismData = " + JSON.stringify(biharTourismData, null, 2) + ";\n";
+
+      const blob = new Blob([finalString], { type: "application/javascript" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "new_data.js";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      startBtn.innerText = "Download Complete!";
+      statusTxt.innerText = "Please replace your old data.js with the downloaded new_data.js file.";
+    });
+  </script>
+</body>
+</html>

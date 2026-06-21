@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Hotel - Tour by BIHAR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: 'hsl(0 0% 0%)',
+              foreground: 'hsl(0 0% 100%)',
+              card: 'hsl(0 0% 5%)',
+              primary: 'hsl(0 0% 100%)',
+              'primary-foreground': 'hsl(0 0% 0%)',
+              muted: 'hsl(0 0% 12%)',
+              'muted-foreground': 'hsl(0 0% 60%)',
+              accent: 'hsl(0 0% 15%)',
+              border: 'hsl(0 0% 20%)',
+            },
+            fontFamily: {
+              body: ['Outfit', 'sans-serif'],
+              heading: ['Space Grotesk', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body class="min-h-screen bg-background text-foreground font-body p-6 flex items-center justify-center">
+    
+    <div class="w-full max-w-lg rounded-xl border border-border bg-card p-8 shadow-2xl relative overflow-hidden">
+      <!-- Decor -->
+      <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+
+      <a href="index.html" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors mb-6">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Map
+      </a>
+
+      <h1 class="font-heading text-3xl font-bold text-white mb-2 text-glow">Confirm Booking</h1>
+      <p class="text-sm text-muted-foreground mb-6" id="hotel-info">Loading hotel details...</p>
+
+      <form id="booking-form" class="space-y-5 relative z-10">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Full Name</label>
+            <input type="text" id="guest-name" required class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors" placeholder="Enter your full name">
+          </div>
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Phone Number</label>
+            <input type="tel" id="guest-phone" required class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors" placeholder="+91">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Email Address</label>
+          <input type="email" id="guest-email" required class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors" placeholder="your@email.com">
+        </div>
+        
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Home Address</label>
+          <input type="text" id="guest-address" required class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors" placeholder="City, State">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Check-in Date</label>
+            <input type="date" id="checkin-date" required class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Check-out Date</label>
+            <input type="date" id="checkout-date" required class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Number of Guests</label>
+          <input type="number" id="guests-count" required min="1" max="10" value="1" class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors" placeholder="1">
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Special Requests (Optional)</label>
+          <textarea id="special-requests" rows="2" class="w-full rounded-md border border-border bg-black/50 px-4 py-2.5 text-sm text-white focus:border-white focus:outline-none transition-colors" placeholder="Any specific needs?"></textarea>
+        </div>
+
+        <button type="submit" class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-primary-foreground transition-all hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98]">
+          <i data-lucide="message-circle" class="w-5 h-5"></i>
+          Confirm & Send via WhatsApp
+        </button>
+      </form>
+    </div>
+
+    <script>
+      lucide.createIcons();
+
+      // Parse URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const hotelName = urlParams.get('hotel') || "Selected Hotel";
+      const roomType = urlParams.get('room') || "Standard Room";
+      const price = urlParams.get('price') || "N/A";
+      const phone = urlParams.get('phone') || "+910000000000";
+
+      document.getElementById('hotel-info').innerHTML = `You are booking the <span class="text-white font-semibold">${roomType}</span> at <span class="text-white font-semibold">${hotelName}</span>.<br>Price: <span class="text-white font-semibold">${price}</span>`;
+
+      // Form submission
+      document.getElementById('booking-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('guest-name').value;
+        const gPhone = document.getElementById('guest-phone').value;
+        const email = document.getElementById('guest-email').value;
+        const address = document.getElementById('guest-address').value;
+        const checkin = document.getElementById('checkin-date').value;
+        const checkout = document.getElementById('checkout-date').value;
+        const guests = document.getElementById('guests-count').value;
+        const requests = document.getElementById('special-requests').value;
+
+        // Construct WhatsApp message
+        const message = `*New Booking Request*%0A%0A` +
+                        `*Hotel:* ${hotelName}%0A` +
+                        `*Room Type:* ${roomType}%0A` +
+                        `*Price:* ${price}%0A%0A` +
+                        `*Guest Details:*%0A` +
+                        `- Name: ${name}%0A` +
+                        `- Phone: ${gPhone}%0A` +
+                        `- Email: ${email}%0A` +
+                        `- Address: ${address}%0A` +
+                        `- Check-in: ${checkin}%0A` +
+                        `- Check-out: ${checkout}%0A` +
+                        `- Guests: ${guests}%0A` +
+                        (requests ? `- Special Requests: ${requests}` : '');
+
+        // Format phone number (remove spaces, +, -, etc)
+        const formattedPhone = phone.replace(/\D/g, '');
+
+        // Redirect to WhatsApp
+        window.location.href = `https://wa.me/${formattedPhone}?text=${message}`;
+      });
+    </script>
+  </body>
+</html>
