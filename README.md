@@ -10,19 +10,14 @@ Tour by Bihar is a tourism information web application that provides district-wi
 * Interactive map-based navigation
 
 ## Technologies Used
+- HTML
+- CSS
+- JavaScript
 
-* Vite
-* TypeScript
-* React
-* Tailwind CSS
-* shadcn-ui
 
-## How to Run Locally
-
-```sh
-npm install
-npm run dev
-```
+## Team Members
+- Guguloth Akhil
+- Arpit Chourasia
 
 ## Project Goal
 
